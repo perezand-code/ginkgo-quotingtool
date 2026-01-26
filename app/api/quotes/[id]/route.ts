@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 
-export async function GET(_req: Request, ctx: { params: { id: string } }) {
+export async function GET(
+  _req: Request,
+  ctx: { params: Promise<{ id: string }> }
+) {
+  const { id } = await ctx.params;
+
   const supabase = supabaseServer();
 
   const { data, error } = await supabase
     .from("quotes")
     .select("*")
-    .eq("id", ctx.params.id)
+    .eq("id", id)
     .single();
 
   if (error || !data) {
