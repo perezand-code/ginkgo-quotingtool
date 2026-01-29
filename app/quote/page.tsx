@@ -137,8 +137,8 @@ export default function QuotePage() {
           </a>
 
           <nav className="hidden items-center gap-8 text-sm font-medium text-gray-700 md:flex">
-            <a className="hover:text-gray-900" href="/">Home</a>
-            <a className="hover:text-gray-900" href="/">About Us</a>
+            <a className="hover:text-gray-900" href="https://ginkgopressurewashing.com/">Home</a>
+            <a className="hover:text-gray-900" href="https://ginkgopressurewashing.com/">About Us</a>
 
             <a
               href="tel:+12602674413"
