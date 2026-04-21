@@ -54,6 +54,16 @@ function isValidPhone(s: string) {
   return digits.length >= 10;
 }
 
+async function validateQuoteRequest(reqBody: QuoteRequest): Promise<string | null> {
+  if (!reqBody.address?.trim()) return "Missing address.";
+  if (!reqBody.name?.trim()) return "Missing name.";
+  if (!reqBody.phone?.trim() || !isValidPhone(reqBody.phone)) {
+    return "Invalid phone number.";
+  }
+  if (!reqBody.service) return "Missing service.";
+  return null;
+}
+
 export async function POST(req: Request) {
   let body: QuoteRequest;
 
@@ -63,39 +73,42 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  if (!body.address?.trim()) return NextResponse.json({ error: "Missing address." }, { status: 400 });
-  if (!body.name?.trim()) return NextResponse.json({ error: "Missing name." }, { status: 400 });
-  if (!body.phone?.trim() || !isValidPhone(body.phone)) {
-    return NextResponse.json({ error: "Invalid phone number." }, { status: 400 });
+  const validationError = await validateQuoteRequest(body);
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
-  if (!body.service) return NextResponse.json({ error: "Missing service." }, { status: 400 });
 
-  const { low, high } = estimateRange({
-    service: body.service,
-    size: body.size,
-    condition: body.condition,
-  });
-
-  const supabase = supabaseServer();
-
-  const { data, error } = await supabase
-    .from("quotes")
-    .insert({
-      address: body.address,
-      name: body.name,
-      phone: body.phone,
+  try {
+    const { low, high } = estimateRange({
       service: body.service,
       size: body.size,
       condition: body.condition,
-      estimate_low: low,
-      estimate_high: high,
-    })
-    .select("id")
-    .single();
+    });
 
-  if (error || !data) {
-    return NextResponse.json({ error: "Database insert failed." }, { status: 500 });
+    const supabase = supabaseServer();
+
+    const { data, error } = await supabase
+      .from("quotes")
+      .insert({
+        address: body.address,
+        name: body.name,
+        phone: body.phone,
+        service: body.service,
+        size: body.size,
+        condition: body.condition,
+        estimate_low: low,
+        estimate_high: high,
+      })
+      .select("id")
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json({ error: "Database insert failed." }, { status: 500 });
+    }
+
+    return NextResponse.json({ id: data.id, estimateLow: low, estimateHigh: high });
+  } catch (error) {
+    console.error("Error creating quote:", error);
+    return NextResponse.json({ error: "Internal server error." }, { status: 500 });
   }
-
-  return NextResponse.json({ id: data.id, estimateLow: low, estimateHigh: high });
 }
