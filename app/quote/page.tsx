@@ -52,7 +52,7 @@ function estimateRange(params: {
 
 export default function QuotePage() {
   const router = useRouter();
-  const [service, setService] = useState<ServiceType | null>(null);
+  const [servicesSelected, setServicesSelected] = useState<ServiceType[]>([]);
   const [size, setSize] = useState<SizeType>("Medium");
   const [condition, setCondition] = useState<ConditionType>("Light");
 
@@ -65,12 +65,29 @@ export default function QuotePage() {
   const [submitted, setSubmitted] = useState(false);
 
   const estimate = useMemo(() => {
-    return estimateRange({ service, size, condition });
-  }, [service, size, condition]);
+    if (servicesSelected.length === 0) return null;
+
+    const ranges = servicesSelected.map((service) =>
+      estimateRange({ service, size, condition })
+    );
+
+    const low = ranges.reduce((sum, r) => sum + (r?.low ?? 0), 0);
+    const high = ranges.reduce((sum, r) => sum + (r?.high ?? 0), 0);
+
+    return { low, high };
+  }, [servicesSelected, size, condition]);
+
+  function toggleService(s: ServiceType) {
+  setServicesSelected((prev) =>
+    prev.includes(s)
+      ? prev.filter((item) => item !== s)
+      : [...prev, s]
+  );
+  }
 
   function validate() {
     if (!address.trim()) return "Please enter a service address.";
-    if (!service) return "Please select a service.";
+    if (servicesSelected.length === 0) return "Please select at least one service.";
     if (!name.trim()) return "Please enter your name.";
     if (!phone.trim()) return "Please enter your phone number.";
     if (!consent) return "You must agree to receive SMS messages."
@@ -84,10 +101,7 @@ export default function QuotePage() {
       setError(msg);
       return;
     }
-    if (!service) {
-    setError("Please select a service.");
-    return;
-  }
+
 
   setError(null);
 
@@ -99,9 +113,10 @@ export default function QuotePage() {
         address,
         name,
         phone,
-        service,
+        services: servicesSelected,
         size,
         condition,
+        consent,
       }),
     });
 
@@ -247,12 +262,12 @@ export default function QuotePage() {
                 </label>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   {services.map((s) => {
-                    const selected = service === s;
+                    const selected = servicesSelected.includes(s);
                     return (
                       <button
                         key={s}
                         type="button"
-                        onClick={() => setService(s)}
+                        onClick={() => toggleService(s)}
                         className={[
                           "rounded-xl border px-4 py-3 text-left transition",
                           selected
@@ -262,7 +277,7 @@ export default function QuotePage() {
                       >
                         <div className="font-medium text-gray-900">{s}</div>
                         <div className="text-sm text-gray-500">
-                          {selected ? "Selected" : "Tap to select"}
+                          {selected ? "Selected" : "Tap to add"}
                         </div>
                       </button>
                     );

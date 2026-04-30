@@ -12,7 +12,7 @@ type QuoteRequest = {
   address: string;
   name: string;
   phone: string;
-  service: ServiceType;
+  services: ServiceType[];
   size: SizeType;
   condition: ConditionType;
   consent: boolean; 
@@ -66,8 +66,12 @@ async function validateQuoteRequest(reqBody: QuoteRequest): Promise<string | nul
     return "Invalid phone number.";
   }
 
-  if (!allowedServices.includes(reqBody.service)) {
-    return "Invalid service.";
+  if (
+  !Array.isArray(reqBody.services) ||
+  reqBody.services.length === 0 ||
+  !reqBody.services.every((s) => allowedServices.includes(s))
+  ) {
+  return "Invalid services.";
   }
 
   if (!allowedSizes.includes(reqBody.size)) {
@@ -100,11 +104,16 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { low, high } = estimateRange({
-      service: body.service,
-      size: body.size,
-      condition: body.condition,
-    });
+    const ranges = body.services.map((service) =>
+      estimateRange({
+        service,
+        size: body.size,
+        condition: body.condition,
+      })
+    );
+
+    const low = ranges.reduce((sum, r) => sum + r.low, 0);
+    const high = ranges.reduce((sum, r) => sum + r.high, 0);
 
     const supabase = supabaseServer();
 
@@ -114,7 +123,7 @@ export async function POST(req: Request) {
         address: body.address,
         name: body.name,
         phone: body.phone,
-        service: body.service,
+        service: body.services,
         size: body.size,
         condition: body.condition,
         estimate_low: low,
