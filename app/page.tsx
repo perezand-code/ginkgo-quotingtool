@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
-
+//button or main page should be ginkgo-webpage
 export default function Home() {
   redirect("/quote");
   return (

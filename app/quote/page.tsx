@@ -23,8 +23,8 @@ function estimateRange(params: {
   if (!service) return null;
 
   const baseByService: Record<ServiceType, number> = {
-    Driveway: 140,
-    "House Wash": 260,
+    Driveway: 170,
+    "House Wash": 290,
     "Deck/Patio": 160,
     Fence: 180,
   };
@@ -61,6 +61,7 @@ export default function QuotePage() {
   const [phone, setPhone] = useState("");
 
   const [error, setError] = useState<string | null>(null);
+  const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const estimate = useMemo(() => {
@@ -72,6 +73,7 @@ export default function QuotePage() {
     if (!service) return "Please select a service.";
     if (!name.trim()) return "Please enter your name.";
     if (!phone.trim()) return "Please enter your phone number.";
+    if (!consent) return "You must agree to receive SMS messages."
     return null;
   }
 
@@ -339,11 +341,19 @@ export default function QuotePage() {
                   Quote received! Next we’ll save it to the backend and text you a confirmation.
                 </div>
               )}
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(e) => setConsent(e.target.checked)}
+                  className="mt-1"
+                />
 
-              <p className="text-xs text-gray-500">
-                By continuing, you agree to receive texts about your quote. Msg & data rates may apply.
-                Reply STOP to opt out.
-              </p>
+                <p className="text-xs text-gray-600">
+                  I agree to receive SMS messages from Ginkgo Pressure Washing regarding my quote.
+                  Msg & data rates may apply. Reply STOP to opt out.
+                </p>
+              </div>
             </div>
           </section>
         </div>

@@ -4,6 +4,9 @@ import { supabaseServer } from "@/lib/supabaseServer";
 type ServiceType = "Driveway" | "House Wash" | "Deck/Patio" | "Fence";
 type SizeType = "Small" | "Medium" | "Large";
 type ConditionType = "Light" | "Medium" | "Heavy";
+const allowedServices: ServiceType[] = ["Driveway", "House Wash", "Deck/Patio", "Fence"];
+const allowedSizes: SizeType[] = ["Small", "Medium", "Large"];
+const allowedConditions: ConditionType[] = ["Light", "Medium", "Heavy"];
 
 type QuoteRequest = {
   address: string;
@@ -12,6 +15,7 @@ type QuoteRequest = {
   service: ServiceType;
   size: SizeType;
   condition: ConditionType;
+  consent: boolean; 
 };
 
 function estimateRange(params: {
@@ -22,8 +26,8 @@ function estimateRange(params: {
   const { service, size, condition } = params;
 
   const baseByService: Record<ServiceType, number> = {
-    Driveway: 140,
-    "House Wash": 260,
+    Driveway: 170,
+    "House Wash": 290,
     "Deck/Patio": 160,
     Fence: 180,
   };
@@ -57,10 +61,27 @@ function isValidPhone(s: string) {
 async function validateQuoteRequest(reqBody: QuoteRequest): Promise<string | null> {
   if (!reqBody.address?.trim()) return "Missing address.";
   if (!reqBody.name?.trim()) return "Missing name.";
+
   if (!reqBody.phone?.trim() || !isValidPhone(reqBody.phone)) {
     return "Invalid phone number.";
   }
-  if (!reqBody.service) return "Missing service.";
+
+  if (!allowedServices.includes(reqBody.service)) {
+    return "Invalid service.";
+  }
+
+  if (!allowedSizes.includes(reqBody.size)) {
+    return "Invalid size.";
+  }
+
+  if (!allowedConditions.includes(reqBody.condition)) {
+    return "Invalid condition.";
+  }
+
+  if (reqBody.consent !== true) {
+    return "SMS consent is required.";
+  }
+
   return null;
 }
 
@@ -98,6 +119,8 @@ export async function POST(req: Request) {
         condition: body.condition,
         estimate_low: low,
         estimate_high: high,
+        sms_consent: body.consent,
+        sms_consent_at: new Date().toISOString(),
       })
       .select("id")
       .single();
@@ -111,4 +134,13 @@ export async function POST(req: Request) {
     console.error("Error creating quote:", error);
     return NextResponse.json({ error: "Internal server error." }, { status: 500 });
   }
+  // AFTER successful DB insert
+  if (process.env.TWILIO_ENABLED === "true") {
+  try {
+    // TODO: integrate Twilio here
+    console.log("Would send SMS to:", body.phone);
+  } catch (err) {
+    console.error("Twilio error:", err);
+  }
+}
 }
