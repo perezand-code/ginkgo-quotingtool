@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { checkRateLimit } from "@/lib/rateLimiter";
 
 type ServiceType = "Driveway" | "House Wash" | "Deck/Patio" | "Fence";
 type SizeType = "Small" | "Medium" | "Large";
@@ -90,6 +91,19 @@ async function validateQuoteRequest(reqBody: QuoteRequest): Promise<string | nul
 }
 
 export async function POST(req: Request) {
+  const ip =
+  req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+  req.headers.get("x-real-ip") ||
+  "unknown";
+
+const rateLimit = checkRateLimit(ip);
+
+if (!rateLimit.allowed) {
+  return NextResponse.json(
+    { error: "Too many quote requests. Please try again later." },
+    { status: 429 }
+  );
+}
   let body: QuoteRequest;
 
   try {
