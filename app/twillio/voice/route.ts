@@ -98,8 +98,8 @@ export async function POST(req: NextRequest) {
       <Response>
         <Say>Thanks for calling Ginkgo Pressure Washing. Connecting you now.</Say>
         <Dial timeout="20">
-          <Number>+1260_310_5233</Number>
-          <Number>+1260_267_4413</Number>
+          <Number>+12603105233</Number>
+          <Number>+12602674413</Number>
         </Dial>
       </Response>
     `);
