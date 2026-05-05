@@ -10,6 +10,8 @@ function twiml(xml: string) {
 const trustedAreaCodes = ["260", "317", "463", "574", "765", "812", "930"];
 
 async function scoreInitialCall(from: string | null) {
+  const supabase = supabaseServer();
+
   let score = 0;
   const reasons: string[] = [];
 
@@ -33,7 +35,7 @@ async function scoreInitialCall(from: string | null) {
     reasons.push("indiana_or_nearby_area_code");
   }
 
-  const { data: quoteLead } = await supabaseServer
+  const { data: quoteLead } = await supabase
     .from("quotes")
     .select("id")
     .eq("phone", from)
@@ -45,7 +47,7 @@ async function scoreInitialCall(from: string | null) {
     reasons.push("existing_quote_lead");
   }
 
-  const { data: spamNumber } = await supabaseServer
+  const { data: spamNumber } = await supabase
     .from("spam_numbers")
     .select("id")
     .eq("phone", from)
@@ -59,7 +61,7 @@ async function scoreInitialCall(from: string | null) {
 
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
-  const { count } = await supabaseServer
+  const { count } = await supabase
     .from("call_logs")
     .select("*", { count: "exact", head: true })
     .eq("phone", from)
@@ -74,6 +76,8 @@ async function scoreInitialCall(from: string | null) {
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = supabaseServer();
+
   const formData = await req.formData();
 
   const from = formData.get("From")?.toString() || null;
@@ -81,7 +85,7 @@ export async function POST(req: NextRequest) {
 
   const { score, reasons } = await scoreInitialCall(from);
 
-  await supabaseServer.from("call_logs").insert({
+  await supabase.from("call_logs").insert({
     phone: from,
     call_sid: callSid,
     score,
@@ -118,7 +122,7 @@ export async function POST(req: NextRequest) {
           Briefly say what service you need, like driveway cleaning, house wash, or commercial pressure washing.
         </Say>
       </Gather>
-      <Say>Sorry, we did not catch that. Please request a quote online. After give us a right call back.</Say>
+      <Say>Sorry, we did not catch that. Please request a quote online, then give us a call back.</Say>
       <Hangup/>
     </Response>
   `);
