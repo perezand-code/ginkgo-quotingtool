@@ -102,9 +102,6 @@ async function validateQuoteRequest(reqBody: QuoteRequest): Promise<string | nul
     return "Invalid condition.";
   }
 
-  if (reqBody.consent !== true) {
-    return "SMS consent is required.";
-  }
 
   return null;
 }
@@ -149,6 +146,7 @@ export async function POST(req: Request) {
 
     const low = ranges.reduce((sum, r) => sum + r.low, 0);
     const high = ranges.reduce((sum, r) => sum + r.high, 0);
+    
 
     const supabase = supabaseServer();
 
@@ -176,63 +174,65 @@ export async function POST(req: Request) {
       );
     }
 
-    try {
-      const quoteId = data.id;
-      const customerPhone = toE164US(body.phone);
-      const firstName = body.name.trim().split(" ")[0] || "there";
-      const serviceText = body.services.join(", ");
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (process.env.TWILIO_ENABLED === "true" && body.consent === true) {
+  try {
+    const quoteId = data.id;
+    const customerPhone = toE164US(body.phone);
+    const firstName = body.name.trim().split(" ")[0] || "there";
+    const serviceText = body.services.join(", ");
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
-      const customerMessage = await sendSms({
-        to: customerPhone,
-        body: customerConfirmationText(firstName, serviceText),
-        statusCallback: siteUrl
-          ? `${siteUrl}/api/twilio/status`
-          : undefined,
+    const customerMessage = await sendSms({
+      to: customerPhone,
+      body: customerConfirmationText(firstName, serviceText),
+      statusCallback: siteUrl
+        ? `${siteUrl}/api/twilio/status`
+        : undefined,
+    });
+
+    await supabase
+      .from("quotes")
+      .update({
+        customer_sms_sid: customerMessage.sid,
+        customer_sms_status: customerMessage.status,
+        customer_sms_updated_at: new Date().toISOString(),
+      })
+      .eq("id", quoteId);
+
+    const internalText = internalLeadAlertText({
+      id: quoteId,
+      name: body.name,
+      phone: customerPhone,
+      service: serviceText,
+      size: body.size,
+      condition: body.condition,
+      address: body.address,
+    });
+
+    const ownerPhones = [
+      process.env.OWNER_PHONE_1,
+      process.env.OWNER_PHONE_2,
+    ].filter(Boolean) as string[];
+
+    for (const ownerPhone of ownerPhones) {
+      const internalMessage = await sendSms({
+        to: ownerPhone,
+        body: internalText,
       });
 
       await supabase
         .from("quotes")
         .update({
-          customer_sms_sid: customerMessage.sid,
-          customer_sms_status: customerMessage.status,
-          customer_sms_updated_at: new Date().toISOString(),
+          internal_sms_sid: internalMessage.sid,
+          internal_sms_status: internalMessage.status,
+          internal_sms_updated_at: new Date().toISOString(),
         })
         .eq("id", quoteId);
-
-      const internalText = internalLeadAlertText({
-        id: quoteId,
-        name: body.name,
-        phone: customerPhone,
-        service: serviceText,
-        size: body.size,
-        condition: body.condition,
-        address: body.address,
-      });
-
-      const ownerPhones = [
-        process.env.OWNER_PHONE_1,
-        process.env.OWNER_PHONE_2,
-      ].filter(Boolean) as string[];
-
-      for (const ownerPhone of ownerPhones) {
-        const internalMessage = await sendSms({
-          to: ownerPhone,
-          body: internalText,
-        });
-
-        await supabase
-          .from("quotes")
-          .update({
-            internal_sms_sid: internalMessage.sid,
-            internal_sms_status: internalMessage.status,
-            internal_sms_updated_at: new Date().toISOString(),
-          })
-          .eq("id", quoteId);
-      }
-    } catch (smsError) {
-      console.error("SMS sending failed:", smsError);
     }
+  } catch (smsError) {
+    console.error("SMS sending failed:", smsError);
+  }
+}
 
     return NextResponse.json({
       id: data.id,
