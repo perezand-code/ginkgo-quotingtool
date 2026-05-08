@@ -90,7 +90,6 @@ export default function QuotePage() {
     if (servicesSelected.length === 0) return "Please select at least one service.";
     if (!name.trim()) return "Please enter your name.";
     if (!phone.trim()) return "Please enter your phone number.";
-    if (!consent) return "You must agree to receive SMS messages."
     return null;
   }
 
@@ -365,8 +364,7 @@ export default function QuotePage() {
                 />
 
                 <p className="text-xs text-gray-600">
-                  I agree to receive SMS messages from Ginkgo Pressure Washing regarding my quote.
-                  Msg & data rates may apply. Reply STOP to opt out.
+                    Optional: Get faster quote updates and scheduling by text. Most customers prefer this for quick responses. We only message about your request—no spam. Msg & data rates may apply. Reply STOP to opt out or HELP for help. Consent isn’t required to request a quote.
                 </p>
               </div>
             </div>
