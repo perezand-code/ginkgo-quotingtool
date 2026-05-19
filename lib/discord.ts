@@ -12,6 +12,10 @@ export async function sendDiscordNotification(data: {
     return;
   }
 
+  // REPLACE THESE WITH YOUR REAL DISCORD USER IDS
+  const ANDREW_ID = "793361587540852756";
+  const ELVIN_ID = "541457098425499688";
+
   try {
     await fetch(webhook, {
       method: "POST",
@@ -19,44 +23,55 @@ export async function sendDiscordNotification(data: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        content: `🚨 New Lead Alert <@${ANDREW_ID}> <@${ELVIN_ID}>`,
+
         embeds: [
           {
             title: "🟢 New Quote Submission",
             color: 3066993,
+
             fields: [
               {
                 name: "Customer",
-                value: data.name,
+                value: data.name || "N/A",
                 inline: true,
               },
               {
                 name: "Phone",
-                value: data.phone,
+                value: data.phone || "N/A",
                 inline: true,
               },
               {
                 name: "Address",
-                value: data.address,
+                value: data.address || "N/A",
               },
               {
                 name: "Services",
-                value: data.services.join(", "),
+                value:
+                  data.services?.length > 0
+                    ? data.services.join(", ")
+                    : "N/A",
               },
               {
                 name: "Estimate",
                 value: data.estimatedPrice
                   ? `$${data.estimatedPrice}`
                   : "N/A",
+                inline: true,
               },
             ],
+
             footer: {
               text: "Ginkgo CRM",
             },
+
             timestamp: new Date().toISOString(),
           },
         ],
       }),
     });
+
+    console.log("Discord notification sent");
   } catch (err) {
     console.error("Discord webhook failed:", err);
   }
