@@ -3,7 +3,8 @@ export async function sendDiscordNotification(data: {
   phone: string;
   address: string;
   services: string[];
-  estimatedPrice?: number;
+  estimateLow?: number;
+  estimateHigh?: number;
 }) {
   const webhook = process.env.DISCORD_WEBHOOK_URL;
 
@@ -54,10 +55,11 @@ export async function sendDiscordNotification(data: {
               },
               {
                 name: "Estimate",
-                value: data.estimatedPrice
-                  ? `$${data.estimatedPrice}`
-                  : "N/A",
-                inline: true,
+                value:
+                  data.estimateLow && data.estimateHigh
+                    ? `$${data.estimateLow} - $${data.estimateHigh}`
+                    : "N/A",
+                  inline: true,
               },
             ],
 
