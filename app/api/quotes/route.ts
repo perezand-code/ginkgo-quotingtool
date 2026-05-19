@@ -3,6 +3,7 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { checkRateLimit } from "@/lib/rateLimiter";
 import { customerConfirmationText, internalLeadAlertText } from "@/lib/smsTemplates";
 import { sendSms } from "@/lib/twilio";
+import { sendDiscordNotification } from "@/lib/discord";
 
 type ServiceType = "Driveway" | "House Wash" | "Deck/Patio" | "Fence";
 type SizeType = "Small" | "Medium" | "Large";
@@ -173,6 +174,18 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
+
+    await sendDiscordNotification({
+  id: data.id,
+  name: body.name,
+  phone: body.phone,
+  address: body.address,
+  services: body.services,
+  size: body.size,
+  condition: body.condition,
+  estimateLow: low,
+  estimateHigh: high,
+});
 
     if (process.env.TWILIO_ENABLED === "true" && body.consent === true) {
   try {
