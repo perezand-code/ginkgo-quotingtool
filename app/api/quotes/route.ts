@@ -176,7 +176,6 @@ export async function POST(req: Request) {
     }
 
     await sendDiscordNotification({
-      id: data.id,
       name: body.name,
       phone: body.phone,
       address: body.address,
