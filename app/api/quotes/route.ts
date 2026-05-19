@@ -176,16 +176,12 @@ export async function POST(req: Request) {
     }
 
     await sendDiscordNotification({
-  id: data.id,
-  name: body.name,
-  phone: body.phone,
-  address: body.address,
-  services: body.services,
-  size: body.size,
-  condition: body.condition,
-  estimateLow: low,
-  estimateHigh: high,
-});
+      name: body.name,
+      phone: body.phone,
+      address: body.address,
+      services: body.services,
+      estimatedPrice,
+    });
 
     if (process.env.TWILIO_ENABLED === "true" && body.consent === true) {
   try {
