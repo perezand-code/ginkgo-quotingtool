@@ -180,7 +180,7 @@ export async function POST(req: Request) {
       phone: body.phone,
       address: body.address,
       services: body.services,
-      estimatedPrice,
+      estimatedPrice: body.estimatedPrice,
     });
 
     if (process.env.TWILIO_ENABLED === "true" && body.consent === true) {
