@@ -63,6 +63,7 @@ export default function QuotePage() {
   const [error, setError] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const estimate = useMemo(() => {
     if (servicesSelected.length === 0) return null;
