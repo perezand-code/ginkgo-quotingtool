@@ -95,13 +95,18 @@ export default function QuotePage() {
   }
 
   async function onSubmit() {
-    setSubmitted(false);
-    const msg = validate();
-    if (msg) {
-      setError(msg);
-      return;
-    }
+  if (isSubmitting) return;
 
+  setIsSubmitting(true);
+  setSubmitted(false);
+
+  const msg = validate();
+
+  if (msg) {
+    setError(msg);
+    setIsSubmitting(false);
+    return;
+  }
 
   setError(null);
 
@@ -124,17 +129,15 @@ export default function QuotePage() {
 
     if (!res.ok) {
       setError(data?.error ?? "Something went wrong.");
+      setIsSubmitting(false);
       return;
     }
-    router.push(`/q/${data.id}`);
 
-    // data.id is your saved quote id
     setSubmitted(true);
-
-    // Next phase: redirect to /q/[id]
-    // router.push(`/q/${data.id}`);
+    router.push(`/q/${data.id}`);
   } catch {
     setError("Network error. Please try again.");
+    setIsSubmitting(false);
   }
 }
 
@@ -346,8 +349,16 @@ export default function QuotePage() {
               <button
                 type="button"
                 onClick={onSubmit}
-                className="w-full rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-700"
+                disabled={isSubmitting}
+                className={[
+                  "w-full rounded-xl px-4 py-3 text-base font-semibold text-white shadow-sm transition",
+                  isSubmitting
+                    ? "cursor-not-allowed bg-blue-400 opacity-70"
+                    : "bg-blue-600 hover:bg-blue-700",
+                ].join(" ")}
               >
+                {isSubmitting ? "Submitting..." : "Receive Quote"}
+              </button>
                 Receive Quote
               </button>
 
