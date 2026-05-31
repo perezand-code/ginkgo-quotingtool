@@ -43,7 +43,15 @@ export async function POST(req: Request) {
     const body = String(formData.get("Body") || "").trim();
     const incomingSid = String(formData.get("MessageSid") || "");
 
+    console.log("TWILIO INBOUND HIT:", {
+      from,
+      to,
+      body,
+      incomingSid,
+    });
+
     if (!from || !to || !body) {
+      console.error("Missing inbound SMS data:", { from, to, body });
       return NextResponse.json(
         { error: "Missing inbound SMS data" },
         { status: 400 }
@@ -52,8 +60,6 @@ export async function POST(req: Request) {
 
     const supabase = supabaseServer();
 
-    // CASE 1: Andrew/Elvin replies from their phone:
-    // @2605551234 We are on the way.
     if (isOwnerNumber(from)) {
       const parsed = parseOwnerReply(body);
 
@@ -72,15 +78,25 @@ export async function POST(req: Request) {
         body: parsed.message,
       });
 
-      await supabase.from("sms_messages").insert({
-        quote_id: null,
-        direction: "outbound",
-        from_number: to,
-        to_number: parsed.customerPhone,
-        customer_phone: parsed.customerPhone,
-        body: parsed.message,
-        twilio_sid: outbound.sid,
-      });
+      const { data: outboundData, error: outboundInsertError } = await supabase
+        .from("sms_messages")
+        .insert({
+          quote_id: null,
+          direction: "outbound",
+          from_number: to,
+          to_number: parsed.customerPhone,
+          customer_phone: parsed.customerPhone,
+          body: parsed.message,
+          twilio_sid: outbound.sid,
+          status: outbound.status,
+        })
+        .select();
+
+      console.log("OUTBOUND SMS INSERT DATA:", outboundData);
+
+      if (outboundInsertError) {
+        console.error("OUTBOUND SMS INSERT ERROR:", outboundInsertError);
+      }
 
       await sendDiscordSmsAlert({
         from: to,
@@ -96,16 +112,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    // CASE 2: Customer texts the Ginkgo number.
-    await supabase.from("sms_messages").insert({
-      quote_id: null,
-      direction: "inbound",
-      from_number: from,
-      to_number: to,
-      customer_phone: from,
-      body,
-      twilio_sid: incomingSid,
-    });
+    const { data: inboundData, error: inboundInsertError } = await supabase
+      .from("sms_messages")
+      .insert({
+        quote_id: null,
+        direction: "inbound",
+        from_number: from,
+        to_number: to,
+        customer_phone: from,
+        body,
+        twilio_sid: incomingSid,
+        status: "received",
+      })
+      .select();
+
+    console.log("INBOUND SMS INSERT DATA:", inboundData);
+
+    if (inboundInsertError) {
+      console.error("INBOUND SMS INSERT ERROR:", inboundInsertError);
+    }
 
     await sendDiscordSmsAlert({
       from,
