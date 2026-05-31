@@ -20,7 +20,21 @@ export async function POST(req: Request) {
 
     const supabase = supabaseServer();
 
-    const { error } = await supabase
+    // Update sms_messages table
+    const { error: smsMessageError } = await supabase
+      .from("sms_messages")
+      .update({
+        status: messageStatus,
+        error_code: errorCode,
+      })
+      .eq("twilio_sid", messageSid);
+
+    if (smsMessageError) {
+      console.error("Failed to update sms_messages status:", smsMessageError);
+    }
+
+    // Also keep your quote customer SMS status updated
+    const { error: quoteCustomerError } = await supabase
       .from("quotes")
       .update({
         customer_sms_status: messageStatus,
@@ -29,12 +43,21 @@ export async function POST(req: Request) {
       })
       .eq("customer_sms_sid", messageSid);
 
-    if (error) {
-      console.error("Failed to update SMS status:", error);
-      return NextResponse.json(
-        { error: "Database update failed" },
-        { status: 500 }
-      );
+    if (quoteCustomerError) {
+      console.error("Failed to update quote customer SMS status:", quoteCustomerError);
+    }
+
+    // Also keep your internal owner SMS status updated
+    const { error: quoteInternalError } = await supabase
+      .from("quotes")
+      .update({
+        internal_sms_status: messageStatus,
+        internal_sms_updated_at: new Date().toISOString(),
+      })
+      .eq("internal_sms_sid", messageSid);
+
+    if (quoteInternalError) {
+      console.error("Failed to update quote internal SMS status:", quoteInternalError);
     }
 
     return NextResponse.json({ received: true });
