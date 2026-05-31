@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { sendSms } from "@/lib/twilio";
+import { sendDiscordSmsAlert } from "@/lib/discord";
 
 function normalizePhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -15,8 +16,8 @@ function isOwnerNumber(phone: string) {
   const normalized = normalizePhone(phone);
 
   return (
-    normalized === process.env.OWNER_PHONE_1 ||
-    normalized === process.env.OWNER_PHONE_2
+    normalized === normalizePhone(process.env.OWNER_PHONE_1 || "") ||
+    normalized === normalizePhone(process.env.OWNER_PHONE_2 || "")
   );
 }
 
@@ -43,16 +44,16 @@ export async function POST(req: Request) {
     const incomingSid = String(formData.get("MessageSid") || "");
 
     if (!from || !to || !body) {
-      return NextResponse.json({ error: "Missing inbound SMS data" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing inbound SMS data" },
+        { status: 400 }
+      );
     }
 
     const supabase = supabaseServer();
 
-    /**
-     * CASE 1:
-     * Andrew/Elvin texts the Twilio number:
-     * @2605551234 We are on the way.
-     */
+    // CASE 1: Andrew/Elvin replies from their phone:
+    // @2605551234 We are on the way.
     if (isOwnerNumber(from)) {
       const parsed = parseOwnerReply(body);
 
@@ -72,13 +73,19 @@ export async function POST(req: Request) {
       });
 
       await supabase.from("sms_messages").insert({
+        quote_id: null,
         direction: "outbound",
         from_number: to,
         to_number: parsed.customerPhone,
         customer_phone: parsed.customerPhone,
         body: parsed.message,
         twilio_sid: outbound.sid,
-        status: outbound.status,
+      });
+
+      await sendDiscordSmsAlert({
+        from: to,
+        to: parsed.customerPhone,
+        body: `📤 Sent by owner ${from}:\n${parsed.message}`,
       });
 
       await sendSms({
@@ -89,18 +96,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    /**
-     * CASE 2:
-     * Customer texts Ginkgo number.
-     */
+    // CASE 2: Customer texts the Ginkgo number.
     await supabase.from("sms_messages").insert({
+      quote_id: null,
       direction: "inbound",
       from_number: from,
       to_number: to,
       customer_phone: from,
       body,
       twilio_sid: incomingSid,
-      status: "received",
+    });
+
+    await sendDiscordSmsAlert({
+      from,
+      to,
+      body,
     });
 
     const ownerPhones = [
@@ -110,7 +120,7 @@ export async function POST(req: Request) {
 
     for (const ownerPhone of ownerPhones) {
       await sendSms({
-        to: ownerPhone,
+        to: normalizePhone(ownerPhone),
         body: `New Ginkgo text from ${from}:\n\n"${body}"\n\nReply:\n@${from} your message`,
       });
     }
