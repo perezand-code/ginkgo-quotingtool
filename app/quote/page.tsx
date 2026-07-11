@@ -374,7 +374,7 @@ export default function QuotePage() {
                 />
 
                 <p className="text-xs text-gray-600">
-                    Optional: Get faster quote updates and scheduling by text. Most customers prefer this for quick responses. We only message about your request—no spam. Msg & data rates may apply. Reply STOP to opt out or HELP for help. Consent isn’t required to request a quote.
+                    Optional: By checking this box, you agree to receive SMS messages from Ginkgo Property Solutions LLC, DBA Ginkgo Pressure Washing regarding quote requests, estimates, scheduling updates, appointment reminders, service notifications, customer support, and review requests. Message frequency varies. Message & data rates may apply. Reply STOP to opt out or HELP for assistance. Consent is not a condition of purchase. View our Privacy Policy and Terms & Conditions.
                 </p>
               </div>
             </div>
