@@ -367,15 +367,48 @@ export default function QuotePage() {
               )}
               <div className="flex items-start gap-2">
                 <input
+                  id="sms-consent"
                   type="checkbox"
                   checked={consent}
                   onChange={(e) => setConsent(e.target.checked)}
-                  className="mt-1"
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
                 />
 
-                <p className="text-xs text-gray-600">
-                    Optional: By checking this box, you agree to receive SMS messages from Ginkgo Property Solutions LLC, DBA Ginkgo Pressure Washing regarding quote requests, estimates, scheduling updates, appointment reminders, service notifications, customer support, and review requests. Message frequency varies. Message & data rates may apply. Reply STOP to opt out or HELP for assistance. Consent is not a condition of purchase. View our Privacy Policy and Terms & Conditions.
-                </p>
+                <label
+                  htmlFor="sms-consent"
+                  className="cursor-pointer text-xs leading-5 text-gray-600"
+                >
+                  <span className="font-semibold text-gray-700">Optional:</span>{" "}
+                  By checking this box, I agree to receive SMS messages from{" "}
+                  <span className="font-medium text-gray-700">
+                  Ginkgo Property Solutions LLC, DBA Ginkgo Pressure Washing
+                  </span>{" "}
+                  regarding quote requests, estimates, scheduling updates, appointment
+                  reminders, service notifications, customer support, and review requests.
+                  Message frequency varies. Message &amp; data rates may apply. Reply STOP to
+                  opt out or HELP for assistance. Consent is not a condition of purchase. View
+                  our{" "}
+                  <a
+                    href="https://ginkgopressurewashing.com/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800"
+                  >
+                    Privacy Policy
+                  </a>{" "}
+                  and{" "}
+                  <a
+                    href="https://ginkgopressurewashing.com/terms&cond"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800"
+                  >
+                    Terms &amp; Conditions
+                  </a>
+                  .
+                </label>
               </div>
             </div>
           </section>
